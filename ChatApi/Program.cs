@@ -1,4 +1,9 @@
 
+using ChatApi.Context;
+using ChatApi.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+
 namespace ChatApi
 {
     public class Program
@@ -13,6 +18,15 @@ namespace ChatApi
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            builder.Services.AddDbContext<ChatContext>(opt =>
+            {
+                opt.UseNpgsql(builder.Configuration.GetConnectionString("DbConnection"));
+            });
+
+            builder.Services.AddIdentity<User, IdentityRole>()
+                .AddEntityFrameworkStores<ChatContext>()
+                .AddDefaultTokenProviders();
 
             var app = builder.Build();
 

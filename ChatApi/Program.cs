@@ -5,6 +5,7 @@ using ChatApi.Models;
 using ChatApi.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using FluentValidation.AspNetCore;
 
 namespace ChatApi
 {
@@ -16,7 +17,9 @@ namespace ChatApi
 
             // Add services to the container.
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddFluentValidation();
+
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -41,6 +44,8 @@ namespace ChatApi
             );
 
             builder.Services.AddScoped<JwtService>();
+
+            builder.Services.AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Program>());
 
             var app = builder.Build();
 

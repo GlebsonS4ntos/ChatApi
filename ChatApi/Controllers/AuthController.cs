@@ -3,7 +3,6 @@ using ChatApi.Models;
 using ChatApi.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ChatApi.Controllers
 {
@@ -23,9 +22,9 @@ namespace ChatApi.Controllers
         }
 
         [HttpPost("/createUser")]
-        public async Task<IActionResult> CreateUser (CreateUserDto createUser)
+        public async Task<IActionResult> CreateUser(CreateUserDto createUser)
         {
-            var refreshToken = await _jwtService.CreateRefreshToken();
+            var refreshToken = await _jwtService.CreateRefreshTokenAsync();
 
             var user = new User()
             {
@@ -35,15 +34,15 @@ namespace ChatApi.Controllers
                 ValidRefreshToken = DateTime.UtcNow.AddDays(7)
             };
 
-            var acessToken = await _jwtService.CreateAccessToken(user);
+            var acessToken = await _jwtService.CreateAccessTokenAsync(user);
 
             IdentityResult resultCreateUser = await _manager.CreateAsync(user, createUser.Password);
 
             if (!resultCreateUser.Succeeded) return BadRequest(resultCreateUser.Errors);
 
-            return Ok(new
+            return Ok(new TokenDto
             {
-                AcessToken = acessToken,
+                Accesstoken = acessToken,
                 RefreshToken = refreshToken
             });
         }
@@ -53,8 +52,8 @@ namespace ChatApi.Controllers
         {
             var user = await _signInManager.UserManager.FindByEmailAsync(login.UserEmail);
 
-            if (user == null ) return Unauthorized();
-            else if (await _manager.IsLockedOutAsync(user)) return Unauthorized("Tentou muito otario");
+            if (user == null) return Unauthorized();
+            else if (await _manager.IsLockedOutAsync(user)) return Unauthorized("Quantidade máxima de tentativas excedidas, tente novamente em 10 minutos.");
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, login.Password, true);
 
@@ -62,18 +61,48 @@ namespace ChatApi.Controllers
 
             await _manager.ResetAccessFailedCountAsync(user);
 
-            var refreshToken = await _jwtService.CreateRefreshToken();
+            var refreshToken = await _jwtService.CreateRefreshTokenAsync();
             user.RefreshToken = refreshToken;
             user.ValidRefreshToken = DateTime.UtcNow.AddDays(7);
             await _manager.UpdateAsync(user);
 
-            var acessToken = await _jwtService.CreateAccessToken(user);
+            var acessToken = await _jwtService.CreateAccessTokenAsync(user);
 
-            return Ok(new
+            return Ok(new TokenDto
             {
-                AcessToken = acessToken,
+                Accesstoken = acessToken,
                 RefreshToken = refreshToken
             });
+        }
+
+        [HttpPost("/refresh")]
+        public async Task<IActionResult> RefreshToken(TokenDto t)
+        {
+            try
+            {
+                var username = await _jwtService.GetUsernameToAccesstokenAsync(t.Accesstoken);
+
+                var user = await _signInManager.UserManager.FindByNameAsync(username);
+
+                if (user == null || user.RefreshToken != t.RefreshToken || user.ValidRefreshToken < DateTime.UtcNow) return Unauthorized();
+
+                var refreshToken = await _jwtService.CreateRefreshTokenAsync();
+                user.RefreshToken = refreshToken;
+                user.ValidRefreshToken = DateTime.UtcNow.AddDays(7);
+                await _manager.UpdateAsync(user);
+
+                var acessToken = await _jwtService.CreateAccessTokenAsync(user);
+
+                return Ok(new TokenDto
+                {
+                    Accesstoken = acessToken,
+                    RefreshToken = refreshToken
+                });
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized();
+            }
         }
     }
 }

@@ -19,7 +19,7 @@ namespace ChatApi.Services
             _jwtConfig = jwtConfig.Value;
         }
 
-        public Task<string> CreateAccessToken(User user)
+        public async Task<string> CreateAccessTokenAsync(User user)
         {
             Claim[] userData = new[]
             {
@@ -31,20 +31,45 @@ namespace ChatApi.Services
             var signingCredentials = new SigningCredentials(accessKey, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                claims: userData, 
-                signingCredentials: signingCredentials, 
+                claims: userData,
+                signingCredentials: signingCredentials,
                 expires: DateTime.UtcNow.AddMinutes(_jwtConfig.AcessTokenExpirationMinutes)
             );
-            
-            return Task.FromResult(new JwtSecurityTokenHandler().WriteToken(token));
+
+            return await Task.FromResult(new JwtSecurityTokenHandler().WriteToken(token));
         }
 
-        public Task<string> CreateRefreshToken()
+        public async Task<string> CreateRefreshTokenAsync()
         {
             var randomBytes = new byte[30];
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(randomBytes);
-            return Task.FromResult(Convert.ToBase64String(randomBytes));
+            return await Task.FromResult(Convert.ToBase64String(randomBytes));
+        }
+
+        public async Task<string> GetUsernameToAccesstokenAsync(string accessToken)
+        {
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateAudience = false,
+                ValidateIssuer = false,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfig.AccessTokenKey)),
+                ValidateLifetime = false
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var principal = tokenHandler.ValidateToken(accessToken, tokenValidationParameters, out SecurityToken securityToken);
+
+            if (securityToken is not JwtSecurityToken jwtToken || !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                throw new SecurityTokenException();
+
+            var username = principal.FindFirst("userName")?.Value;
+
+            if (username == null)
+                throw new SecurityTokenException();
+
+            return await Task.FromResult<string>(username);
         }
     }
 }

@@ -6,6 +6,8 @@ using ChatApi.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using FluentValidation.AspNetCore;
+using Chat.Hubs;
+using Chat.Extensions;
 
 namespace ChatApi
 {
@@ -50,6 +52,8 @@ namespace ChatApi
 
             builder.Services.AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Program>());
 
+            builder.Services.AddChat();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -63,8 +67,8 @@ namespace ChatApi
 
             app.UseAuthorization();
 
-
             app.MapControllers();
+            app.MapHub<ChatHub>("/chat");
 
             app.Run();
         }

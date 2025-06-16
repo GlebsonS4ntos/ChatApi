@@ -98,5 +98,10 @@ namespace Chat.Hubs
 
             await Clients.Client(_connectionManager.GetChatId(toUser)).SendAsync("UpdateChatRequest");
         }
+
+        public async Task SendMessage(string toUser, string encryptedMessage)
+        {
+            await Clients.Client(_connectionManager.GetChatId(toUser)).SendAsync("ReceivedMessage", encryptedMessage);
+        }
     }
 }

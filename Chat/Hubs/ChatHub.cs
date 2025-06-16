@@ -22,6 +22,8 @@ namespace Chat.Hubs
             {
                 var connectionId = Context.ConnectionId.ToString();
                 _connectionManager.AddUserConnection(username, connectionId);
+
+                await Clients.Others.SendAsync("NewUser");
             }
 
             await base.OnConnectedAsync();
@@ -31,7 +33,12 @@ namespace Chat.Hubs
         {
             var username = Context.User.Claims.FirstOrDefault(c => c.Type == "userName")?.Value;
 
-            if (!string.IsNullOrEmpty(username)) _connectionManager.RemoveUserConnection(username);
+            if (!string.IsNullOrEmpty(username))
+            {
+                _connectionManager.RemoveUserConnection(username);
+
+                await Clients.Others.SendAsync("DisconectUser");
+            }
 
             await base.OnDisconnectedAsync(exception);
         }

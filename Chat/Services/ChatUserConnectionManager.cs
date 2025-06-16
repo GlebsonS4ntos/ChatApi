@@ -37,7 +37,7 @@ public class ChatUserConnectionManager
         lock (_sendLock)
         {
             if (!_sendChatConnection.TryGetValue(username, out var requests) || !requests.Contains(toUser))
-                return "O pedido para o chat não existe mais.";
+                return "Usuário Offline.";
 
             _sendChatConnection[toUser].Remove(username);
         }
@@ -98,5 +98,10 @@ public class ChatUserConnectionManager
         {
             return _sendChatConnection[username].ToList();
         }
+    }
+
+    public string GetChatId(string username) 
+    {
+        return _userConnections[username];
     }
 }

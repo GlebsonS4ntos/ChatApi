@@ -40,10 +40,19 @@ namespace ChatApi.Controllers
 
             if (!resultCreateUser.Succeeded) return BadRequest(resultCreateUser.Errors);
 
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = DateTime.UtcNow.AddDays(7),
+                Secure = true,
+                SameSite = SameSiteMode.Strict
+            };
+
+            Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+
             return Ok(new TokenDto
             {
-                Accesstoken = acessToken,
-                RefreshToken = refreshToken
+                Accesstoken = acessToken
             });
         }
 
@@ -53,7 +62,7 @@ namespace ChatApi.Controllers
             var user = await _signInManager.UserManager.FindByEmailAsync(login.UserEmail);
 
             if (user == null) return Unauthorized();
-            else if (await _manager.IsLockedOutAsync(user)) return Unauthorized("Quantidade máxima de tentativas excedidas, tente novamente em 10 minutos.");
+            else if (await _manager.IsLockedOutAsync(user)) return StatusCode(429);
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, login.Password, true);
 
@@ -68,10 +77,19 @@ namespace ChatApi.Controllers
 
             var acessToken = await _jwtService.CreateAccessTokenAsync(user);
 
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = DateTime.UtcNow.AddDays(7),
+                Secure = true,
+                SameSite = SameSiteMode.Strict
+            };
+
+            Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+
             return Ok(new TokenDto
             {
-                Accesstoken = acessToken,
-                RefreshToken = refreshToken
+                Accesstoken = acessToken
             });
         }
 
@@ -80,23 +98,33 @@ namespace ChatApi.Controllers
         {
             try
             {
+                var refreshToken = Request.Cookies["refreshToken"];
                 var username = await _jwtService.GetUsernameToAccesstokenAsync(t.Accesstoken);
 
                 var user = await _signInManager.UserManager.FindByNameAsync(username);
 
-                if (user == null || user.RefreshToken != t.RefreshToken || user.ValidRefreshToken < DateTime.UtcNow) return Unauthorized();
+                if (user == null || user.RefreshToken != refreshToken || user.ValidRefreshToken < DateTime.UtcNow) return Unauthorized();
 
-                var refreshToken = await _jwtService.CreateRefreshTokenAsync();
-                user.RefreshToken = refreshToken;
+                var rToken = await _jwtService.CreateRefreshTokenAsync();
+                user.RefreshToken = rToken;
                 user.ValidRefreshToken = DateTime.UtcNow.AddDays(7);
                 await _manager.UpdateAsync(user);
 
                 var acessToken = await _jwtService.CreateAccessTokenAsync(user);
 
+                var cookieOptions = new CookieOptions
+                {
+                    HttpOnly = true,
+                    Expires = DateTime.UtcNow.AddDays(7),
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict
+                };
+
+                Response.Cookies.Append("refreshToken", rToken, cookieOptions);
+
                 return Ok(new TokenDto
                 {
-                    Accesstoken = acessToken,
-                    RefreshToken = refreshToken
+                    Accesstoken = acessToken
                 });
             }
             catch (Exception ex)

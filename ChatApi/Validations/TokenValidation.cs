@@ -10,10 +10,6 @@ namespace ChatApi.Validations
             RuleFor(t => t.Accesstoken)
                 .NotEmpty()
                 .NotNull();
-
-            RuleFor(t => t.RefreshToken)
-                .NotEmpty()
-                .NotNull();
         }
     }
 }

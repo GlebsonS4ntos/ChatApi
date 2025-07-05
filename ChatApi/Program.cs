@@ -54,6 +54,18 @@ namespace ChatApi
 
             builder.Services.AddChat();
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend", policy =>
+                {
+                    var frontUrl = builder.Configuration.GetValue<string>("FrontUrl");
+                    policy.WithOrigins(frontUrl)
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials();
+                });
+            });
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -62,6 +74,8 @@ namespace ChatApi
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
+            app.UseCors("AllowFrontend");
 
             app.UseHttpsRedirection();
 

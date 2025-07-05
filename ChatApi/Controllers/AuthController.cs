@@ -45,7 +45,7 @@ namespace ChatApi.Controllers
                 HttpOnly = true,
                 Expires = DateTime.UtcNow.AddDays(7),
                 Secure = true,
-                SameSite = SameSiteMode.Strict
+                SameSite = SameSiteMode.None
             };
 
             Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
@@ -82,11 +82,10 @@ namespace ChatApi.Controllers
                 HttpOnly = true,
                 Expires = DateTime.UtcNow.AddDays(7),
                 Secure = true,
-                SameSite = SameSiteMode.Strict
+                SameSite = SameSiteMode.None
             };
 
             Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
-
             return Ok(new TokenDto
             {
                 Accesstoken = acessToken
@@ -117,7 +116,7 @@ namespace ChatApi.Controllers
                     HttpOnly = true,
                     Expires = DateTime.UtcNow.AddDays(7),
                     Secure = true,
-                    SameSite = SameSiteMode.Strict
+                    SameSite = SameSiteMode.None
                 };
 
                 Response.Cookies.Append("refreshToken", rToken, cookieOptions);
